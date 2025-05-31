@@ -1,149 +1,159 @@
-'use client'
-import React, { useEffect, useState } from 'react'
-import { useSelector } from 'react-redux';
 
-const minesweeper = () => {
-const {value} = useSelector(state=>state.counter) //reducer part
- 
-const [mineGrid,setMineGrid] = useState([
-    [
-        { item: "0", displayed: false },
-        { item: "1", displayed: false },
-        { item: "2", displayed: false },
-        { item: "1", displayed: false },
-        { item: "3", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "1", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "💣", displayed: false }
-        
-    ],
-    [
-        { item: "💣", displayed: false },
-        { item: "2", displayed: false },
-        { item: "1", displayed: false },
-        { item: "1", displayed: false },
-        { item: "2", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "2", displayed: false },
-        { item: "1", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "1", displayed: false }
-    ],
-    [
-        { item: "💣", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "2", displayed: false },
-        { item: "1", displayed: false },
-        { item: "2", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "1", displayed: false },
-        { item: "2", displayed: false },
-        { item: "1", displayed: false },
-        { item: "1", displayed: false }
-    ],
-    [
-        { item: "2", displayed: false },
-        { item: "2", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "3", displayed: false },
-        { item: "💣", displayed: false },
-        { item: "1", displayed: false },
-        { item: "1", displayed: false },
-        { item: "1", displayed: false },
-        { item: "3", displayed: false }
-    ]
-]);
-const[time,setTime]=useState(10)
-useEffect(()=>{
-    if(time>0){
-       setTimeout(()=>{
-        setTime(time-1)
-       },1000)
-    }},[time])
+'use client';
+import React, { useEffect, useState } from 'react';
 
-const [gameOver,setGame]=useState(false)
-const [score,setScore]=useState(0)
+const initialGrid = [
+  [
+    { item: '0', displayed: false },
+    { item: '1', displayed: false },
+    { item: '2', displayed: false },
+    { item: '1', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+    { item: '1', displayed: false },
+    { item: '', displayed: false },
+    { item: '💣', displayed: false },
+  ],
+  [
+    { item: '💣', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+    { item: '1', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+    { item: '1', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+  ],
+  [
+    { item: '💣', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+    { item: '1', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+    { item: '1', displayed: false },
+    { item: '2', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+  ],
+  [
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+    { item: '', displayed: false },
+    { item: '💣', displayed: false },
+    { item: '3', displayed: false },
+    { item: '', displayed: false },
+    { item: '1', displayed: false },
+    { item: '1', displayed: false },
+    { item: '', displayed: false },
+    { item: '3', displayed: false },
+  ],
+];
 
-const handleMineClick=(row,col)=>{
-    debugger;
-    if (gameOver) {
-        return
+const deepCloneGrid = (grid) =>
+  grid.map((row) => row.map((cell) => ({ ...cell })));
+
+const Mine = () => {
+  const [mineGrid, setMineGrid] = useState(deepCloneGrid(initialGrid));
+  const [timer, setTimer] = useState(30);
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+
+  useEffect(() => {
+    if (timer > 0 && !gameOver) {
+      const timeoutId = setTimeout(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timeoutId);
     }
-    const newGrid= [...mineGrid]
-    newGrid[row][col].displayed=true
-    if (newGrid[row][col].item!=='💣'){
-        setScore(score+Number(newGrid[row][col].item))
-    
-    }
-    else if(newGrid[row][col].item==='💣'){
-        handleGameOver(newGrid)
-    }
- 
-    
+  }, [timer, gameOver]);
 
-}
+  const handleMineClick = (row, col) => {
+    if (gameOver || timer === 0) return;
 
-const handleGameOver = (grid) => {
-    const revealedGrid = grid.map(row =>
-        row.map(cell => ({
-            ...cell,
-            displayed: cell.displayed || cell.item === '💣'
-        }))
+    const newGrid = deepCloneGrid(mineGrid);
+    newGrid[row][col].displayed = true;
+
+    if (newGrid[row][col].item !== '💣') {
+      setScore((prev) => prev + Number(newGrid[row][col].item));
+      setMineGrid(newGrid);
+    } else if (newGrid[row][col].item === '💣') {
+      revealBombs(newGrid);
+      setGameOver(true);
+    }
+
+   
+  };
+
+  const revealBombs = (grid) => {
+    const revealedGrid = grid.map((row) =>
+      row.map((cell) => ({
+        ...cell,
+        displayed: cell.displayed || cell.item === '💣',
+      }))
     );
     setMineGrid(revealedGrid);
-    setGame(true);
-};
+  };
 
-const handleRestart = () => {
-    
-    setMineGrid(...mineGrid);
-    setGame(false);
-    setTime(10);
+  const handleRestart = () => {
+    setMineGrid(deepCloneGrid(initialGrid));
+    setTimer(10);
     setScore(0);
-};
+    setGameOver(false);
+  };
 
   return (
-    <div className='bg-blue-50'>
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-start py-6">
+      <h1 className="text-2xl font-bold mb-2">💣 Minesweeper 💣</h1>
+      <div className="mb-2">
+        <span className="mr-4">⏰ Time Left: {timer}</span>
+        <span>⭐ Score: {score}</span>
+      </div>
 
-        <div className='text-black'><p>MINESWEEPER {value}</p></div>
-        <div className='flex text-black'>
-            <div className='text-black'>Score: {score}</div>
-            <div>Time: {time}</div>
-        </div>
-        {
-            gameOver &&    
-            <p className='text-red-500'>You have lost the game...</p>
-}
-        <div>
-        {mineGrid.map((item,id)=>{
-            return(
-                <div key={id} className='flex text-white'>
-                    {item.map((val,idx)=>{
-                        return (
-                            <div key={idx}  onClick={()=>handleMineClick(id,idx)}
-                            className={`w-10 h-10 text-black border border-black 
-                            ${val.displayed?'bg-white':'bg-amber-200'}`}>
-                                {val.displayed?val.item:""}
-                            </div>
-                        )
-                    })}
-                </div>
-            )
-        })}
-        </div>
-         {gameOver && (
-                <button
-                    onClick={handleRestart}
-                    className='mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'
-                >
-                    Restart Game
-                </button>
-            )}
+      {gameOver && (
+        <p className="text-red-500 font-bold mb-2">
+          💥 Game Over! You clicked on a mine!
+        </p>
+      )}
+      {timer === 0 && !gameOver && (
+        <p className="text-yellow-400 font-bold mb-2">⏳ Time’s up!</p>
+      )}
+
+      <div className="grid gap-0.5">
+        {mineGrid.map((row, rowIndex) => (
+          <div className="flex" key={rowIndex}>
+            {row.map((cell, colIndex) => (
+              <div
+                key={colIndex}
+                onClick={() => handleMineClick(rowIndex, colIndex)}
+                className={`h-12 w-12 flex items-center justify-center text-lg font-bold cursor-pointer transition-colors rounded
+                  ${
+                    cell.displayed
+                      ? 'bg-white text-black'
+                      : 'bg-gray-700 hover:bg-gray-600'
+                  }
+                  border-2 border-gray-300`}
+              >
+                {cell.displayed ? cell.item : ''}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {(gameOver || timer === 0) && (
+        <button
+          onClick={handleRestart}
+          className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow"
+        >
+          🔄 Restart Game
+        </button>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default minesweeper
+export default Mine;
